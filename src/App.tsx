@@ -8,11 +8,13 @@ import Notificationpage from './pages/Notificationpage'
 import Friends from './pages/friends'
 import Profile from './pages/profile'
 import Error from './pages/Error'
+import Navbar from './components/Navbar'
 function App() {
 
   return (
     <>
   <BrowserRouter>
+  <Navbar/>
   <Routes>
   <Route path="/" element={<Home />} />
   <Route path="/login" element={<Login />} />
