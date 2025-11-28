@@ -103,7 +103,9 @@ const LoginPopup = ({ onClose }: { onClose: () => void }) => {
 
     if(res.status===201){
        setActiveTab("login")
-       alert("registration successful")
+       alert("Login successful")
+       //go to home page
+       router.push("/")
     }else{
       setError(res.data)
       alert("registration failed")//we will replace this with toastify
