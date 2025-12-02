@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import PostCard from '../components/Post';
 import axios from 'axios';
-
+import { Link } from 'react-router-dom';
 const Profile = () => {
   const [image, setImage] = useState<File | null>(null);
   const [profile, setProfile] = useState<any>(null);
@@ -102,37 +102,52 @@ const Profile = () => {
 
   return (
     <div className="w-full h-screen bg-gray-200 flex">
-      <div className="w-1/5 bg-white border-r p-4">
-        <h2 className="text-xl font-bold mb-6">Profile</h2>
-        <ul className="space-y-4">
-          <li className="cursor-pointer hover:text-blue-600">My Posts</li>
-          <li className="cursor-pointer hover:text-blue-600">Liked Posts</li>
-          <li className="cursor-pointer hover:text-blue-600">Deleted Posts</li>
-          <li className="cursor-pointer hover:text-blue-600">Settings</li>
-        </ul>
-      </div>
+      {/* left pannel */}
+    <div className="w-1/5 bg-white border-r p-4">
+    <h2 className="text-xl font-bold mb-6">
+      Profile
+    </h2>
+<ul className="space-y-4 te">
+  <li className="cursor-pointer hover:text-blue-600">
+    {/* go to profile page */}
+    <Link to="/profile">My Posts</Link>
+  </li>
 
-      <div className="w-3/5 p-4 space-y-4 overflow-y-auto h-screen">
-        <div className="bg-white rounded-xl shadow p-6 mb-6">
-          <div className="flex items-center space-x-4">
-            <img
-              src={
-                profile.user.profilePic ||
-                'https://cdn-icons-png.flaticon.com/512/847/847969.png'
-              }
-              alt="Profile"
-              className="w-24 h-24 rounded-full border-4 border-blue-600 hover:scale-105 transition-transform object-cover"
-            />
+  <li className="cursor-pointer hover:text-blue-600">
+    {/* go to liked posts page */}
+    <Link to="/liked-posts">Liked Posts</Link>
+  </li>
 
-            <input
-              type="file"
-              accept="image/png, image/jpeg"
-              onChange={(e) =>
-                setImage(e.target.files ? e.target.files[0] : null)
-              }
-            />
+  <li className="cursor-pointer hover:text-blue-600">
+    {/* go to deleted posts page */}
+    <Link to="/deleted-posts">Deleted Posts</Link>
+  </li>
 
-            <button
+  <li className="cursor-pointer hover:text-blue-600">
+    Settings
+  </li>
+</ul>
+
+    </div>
+    {/* middle panel */}
+    <div className="w-3/5 p-4 space-y-4 overflow-y-auto h-screen">
+    {/* profile header */}
+    <div className="bg-white rounded-xl shadow p-6 mb-6">
+      <div className="flex items-center space-x-4">
+              
+        <img
+          src="https://randomuser.me/api/portraits/men/32.jpg"
+          alt="Profile"
+          className="w-24 h-24 rounded-full border-4 border-blue-600 hover:scale-105 transition-transform object-cover"
+        />
+         <input
+                type="file"
+                accept="image/png, image/jpeg"
+                onChange={(e) =>
+                  setImage(e.target.files ? e.target.files[0] : null)
+                }
+              />
+              <button
               onClick={handleProfilePic}
               className="bg-blue-600 text-white px-4 py-1 rounded-lg"
             >
