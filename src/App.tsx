@@ -10,6 +10,7 @@ import Error from './pages/Error'
 import Navbar from './components/Navbar'
 import LikedPosts from "./pages/LikedPosts";
 import DeletedPosts from "./pages/DeletedPosts";
+import FriendProfile from './pages/FriendProfilepage'
 
 function App() {
   return (
@@ -27,6 +28,7 @@ function App() {
           {/* Liked & Deleted pages */}
           <Route path="/liked-posts" element={<LikedPosts />} />
           <Route path="/deleted-posts" element={<DeletedPosts />} />
+          <Route path="/friend/:_id" element={<FriendProfile />} />
 
           {/* 404 last */}
           <Route path="*" element={<Error />} />

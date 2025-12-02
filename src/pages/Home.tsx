@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import PostCard from "../components/Post";
 import axios from "axios";
 import { baseUrl } from "../baseUrl";
+import { Link } from "react-router-dom";
 
 // {
 //     "friends": [
@@ -15,6 +16,7 @@ interface Friend {
   _id: string;
   name: string;
   email: string;
+  profilePic?: string;
 }
 
 const Home = () => {
@@ -196,12 +198,23 @@ const Home = () => {
         <ul className="space-y-4">
 
           {friends.map((friend) => (
-            <li
+            <> 
+            <Link to={`/friend/${friend._id}`}>
+            <div className="bg-white flex flex-col items-center p-2 rounded shadow">
+              
+            <img src={friend.profilePic||""} alt="" 
+            className="w-10 h-10 rounded-full mb-2"
+            />
+                    <li
               key={friend._id}
-              className="mb-2 p-2 bg-white rounded shadow"
+              className="mb-2 p-2  rounded shadow"
             >
               {friend.name}
             </li>
+             </div>  
+             </Link>
+            </>
+
           ))}
           {/* <li className="mb-2 p-2 bg-white rounded shadow">Alice</li> */}
        
