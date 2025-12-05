@@ -199,7 +199,7 @@ const Home = () => {
 
           {friends.map((friend) => (
             <> 
-            <Link to={`/friend/${friend._id}`}>
+            <Link key={friend._id} to={`/friend/${friend._id}`}>
             <div className="bg-white flex flex-col items-center p-2 rounded shadow">
               
             <img src={friend.profilePic||""} alt="" 
