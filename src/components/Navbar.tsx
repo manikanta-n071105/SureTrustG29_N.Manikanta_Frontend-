@@ -185,6 +185,7 @@ const LoginPopup = ({ onClose }: { onClose: () => void }) => {
             <p className="text-sm text-blue-600 text-center mt-2 cursor-pointer"
             onClick={onClose}
             >
+
               FORGOT PASSWORD? CLICK HERE
             </p>
             </Link>
