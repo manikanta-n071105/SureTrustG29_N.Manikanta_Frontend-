@@ -5,7 +5,7 @@ interface NotificationItemProps {
     _id: string;
     from: { name: string; profilePic: string };
     post?: { text?: string; imageUrl?: string };
-    isChecked: boolean;
+    checked: boolean;
     createdAt: string;
     type: string;
     message?: string;
@@ -17,7 +17,7 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
   notification,
   onMarkChecked,
 }) => {
-  const { _id, from, post, isChecked, createdAt, type } = notification;
+  const { _id, from, post, checked, createdAt, type } = notification;
 
   
   let message = notification.message;
@@ -30,7 +30,7 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
   return (
     <div
       className={`flex items-start p-3 border rounded-md gap-3 ${
-        isChecked ? "bg-white" : "bg-blue-50"
+        checked ? "bg-white" : "bg-blue-50"
       }`}
     >
       
@@ -57,7 +57,7 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
       </div>
 
       
-      {!isChecked && (
+      {!checked && (
         <button
           onClick={() => onMarkChecked(_id)}
           className="text-blue-500 text-sm font-semibold"

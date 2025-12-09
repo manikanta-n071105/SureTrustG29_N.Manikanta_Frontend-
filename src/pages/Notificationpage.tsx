@@ -13,7 +13,7 @@ export interface NotificationData {
     text?: string;
     imageUrl?: string;
   };
-  isChecked: boolean;
+  checked: boolean;
   createdAt: string;
   type: string;
   message?: string;
@@ -31,7 +31,7 @@ const NotificationPage: React.FC = () => {
 
         const notificationsWithChecked = (response.data.notifications || []).map((n: any) => ({
         ...n,
-        isChecked: n.isRead,
+        checked: n.checked,
       }));
       setNotifications(notificationsWithChecked);
       } catch (error) {
@@ -51,7 +51,7 @@ const NotificationPage: React.FC = () => {
 
       
       setNotifications((prev) =>
-        prev.map((n) => (n._id === id ? { ...n, isChecked: true } : n))
+        prev.map((n) => (n._id === id ? { ...n, checked: true } : n))
       );
     } catch (error) {
       console.error("Error marking notification:", error);
@@ -61,7 +61,7 @@ const NotificationPage: React.FC = () => {
   const handleMarkAllAsChecked = async () => {
   try {
     await markAllAsChecked();
-    setNotifications(prev => prev.map(n => ({ ...n, isChecked: true })));
+    setNotifications(prev => prev.map(n => ({ ...n, checked: true })));
   } catch (error) {
     console.error("Error marking all notifications:", error);
   }
