@@ -124,7 +124,7 @@ const Profile = () => {
   </li>
 
   <li className="cursor-pointer hover:text-blue-600">
-    Settings
+    <Link to="/settings">Settings</Link>
   </li>
 </ul>
 

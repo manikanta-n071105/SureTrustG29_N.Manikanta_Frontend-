@@ -11,6 +11,7 @@ import Navbar from './components/Navbar'
 import LikedPosts from "./pages/LikedPosts";
 import DeletedPosts from "./pages/DeletedPosts";
 import FriendProfile from './pages/FriendProfilepage'
+import Settings from "./pages/Settings";
 
 function App() {
   return (
@@ -24,6 +25,7 @@ function App() {
           <Route path="/notification" element={<Notificationpage />} />
           <Route path="/friends" element={<Friends />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/settings" element={<Settings />} />
 
           {/* Liked & Deleted pages */}
           <Route path="/liked-posts" element={<LikedPosts />} />
