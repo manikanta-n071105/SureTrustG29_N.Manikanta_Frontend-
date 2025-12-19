@@ -1,63 +1,85 @@
 import { useEffect, useState } from "react";
-import { Image as ImageIcon } from "lucide-react";
 import axios from "axios";
+import { socket } from "../utils/socket";
 
-interface Message {
-  id: string;
-  sender: "me" | "friend";
-  content: string;
-}
+const ChatWindow = ({ onClose }) => {
+  interface Message {
+    id: string;
+    sender: string;
+    content: string;
+  }
 
-
-const dummyMessages: Record<string, Message[]> = {
-  "1": [
-    { id: "m1", sender: "friend", content: "Hey bro!" },
-    { id: "m2", sender: "me", content: "Hi Rahul 👋" },
-  ],
-  "2": [
-    { id: "m3", sender: "friend", content: "Are you coming today?" },
-  ],
-  "3": [],
-};
-
-const ChatWindow = ({ onClose }: { onClose: () => void }) => {
-  const [friends,setFriends] = useState<any>([])
-  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [friends, setFriends] = useState([]);
+  const [selectedUser, setSelectedUser] = useState(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [text, setText] = useState("");
+
+  const token = localStorage.getItem("token");
+
+  /* ---------- SOCKET SETUP ---------- */
+  useEffect(() => {
+  socket.connect();
+  socket.emit("setup", token);
+
+  socket.on("receive_message", (msg) => {
+    //show event
+    console.log(msg);
+    
+    setMessages((prev) => [...prev, formatMessage(msg)]);
+  });
+
+  return () => {
+    socket.off("receive_message");
+    socket.disconnect();
+  };
+}, );
+
+
+
+  /* ---------- FETCH FRIENDS ---------- */
   const getAllFriends = async () => {
-    try {
-      const api = "http://localhost:5000/api/friendrequest/getAllFriends";
-      const token = localStorage.getItem("token");
-      if (!token) return;
-      const res = await axios.get(api, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setFriends(res.data.friends || []);
-    } catch (error) {
-      console.log("Error fetching friends:", error);
-    }
+    const token = localStorage.getItem("token");
+    const res = await axios.get(
+      "http://localhost:5000/api/friendrequest/getAllFriends",
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    setFriends(res.data.friends);
   };
-  const handleSelectUser = (user: any) => {
+
+  useEffect(()=>{
+    getAllFriends()
+  },[])
+
+  /* ---------- FETCH CONVERSATION ---------- */
+  const handleSelectUser = async (user) => {
     setSelectedUser(user);
-    setMessages(dummyMessages[user._id] || []);
+
+    const token = localStorage.getItem("token");
+    const res = await axios.get(
+      `http://localhost:5000/api/chat/conversations/${user._id}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    const formatted = res.data.conversations
+      .reverse()
+      .map(formatMessage);
+
+    setMessages(formatted);
   };
 
+  /* ---------- SEND MESSAGE ---------- */
   const handleSend = () => {
-    if (!text.trim()) return;
+    if (!text.trim() || !selectedUser) return;
 
-    const newMsg: Message = {
-      id: Date.now().toString(),
-      sender: "me",
-      content: text,
-    };
+    socket.emit("send_message", {
+      from: token,
+      to: selectedUser._id,
+      message: text,
+    });
 
-    setMessages((prev) => [...prev, newMsg]);
     setText("");
   };
-useEffect(()=>{
-  getAllFriends()
-},[])
+
   return (
     <div className="w-[320px] h-[400px] bg-white rounded-lg shadow-2xl flex flex-col">
       {/* Header */}
@@ -76,9 +98,7 @@ useEffect(()=>{
               key={user._id}
               onClick={() => handleSelectUser(user)}
               className={`p-2 cursor-pointer hover:bg-gray-100 ${
-                selectedUser?._id === user._id
-                  ? "bg-gray-200 font-bold"
-                  : ""
+                selectedUser?._id === user._id ? "bg-gray-200 font-bold" : ""
               }`}
             >
               {user.name}
@@ -95,9 +115,7 @@ useEffect(()=>{
                   <div
                     key={msg.id}
                     className={`flex ${
-                      msg.sender === "me"
-                        ? "justify-end"
-                        : "justify-start"
+                      msg.sender === "me" ? "justify-end" : "justify-start"
                     }`}
                   >
                     <div
@@ -112,14 +130,10 @@ useEffect(()=>{
                   </div>
                 ))
               ) : (
-                <p className="text-gray-500 text-center">
-                  No messages yet
-                </p>
+                <p className="text-gray-500 text-center">No messages yet</p>
               )
             ) : (
-              <p className="text-gray-500 text-center">
-                Select a friend
-              </p>
+              <p className="text-gray-500 text-center">Select a friend</p>
             )}
           </div>
 
@@ -128,7 +142,7 @@ useEffect(()=>{
             <div className="p-2 border-t flex items-center gap-1">
               {/* <input type="file" /> */}
               <button className="p-2 text-gray-500">
-                <ImageIcon size={18} />
+                {/* <ImageIcon size={18} /> */}
               </button>
               <input
                 value={text}
@@ -152,3 +166,9 @@ useEffect(()=>{
 };
 
 export default ChatWindow;
+
+const formatMessage = (msg) => ({
+  id: msg._id,
+  sender: msg.from._id === localStorage.getItem("userId") ? "me" : "friend",
+  content: msg.message,
+});
