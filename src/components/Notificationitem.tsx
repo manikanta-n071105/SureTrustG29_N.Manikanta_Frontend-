@@ -24,6 +24,8 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
   if (!message) {
     if (type === "like") message = `${from.name} liked your post`;
     else if (type === "comment") message = `${from.name} commented on your post`;
+    else if (type === "friend_request") message = `${from.name} sent you a friend request`;
+    else if (type === "friend_request_accept") message = `${from.name} accepted your friend request`;
     else message = `${from.name} sent a notification`;
   }
 
