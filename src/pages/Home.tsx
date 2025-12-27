@@ -186,9 +186,8 @@ const Home = () => {
               userName={post.userName}
               caption={post.caption}
               likes={post.likes}
-              comments={post.comments}
-              postImage={post.postImage}
-            />
+              comments_count={post.comments}
+              postImage={post.postImage} id={""}            />
           ))}
         </div>
       </div>

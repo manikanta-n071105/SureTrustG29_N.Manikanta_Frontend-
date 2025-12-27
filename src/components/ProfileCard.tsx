@@ -1,4 +1,7 @@
 import React from "react";
+import axios from "axios";
+import { UserPlus } from "lucide-react";
+import { baseUrl } from "../baseUrl";
 
 interface ProfileCardProps {
   name: string;
