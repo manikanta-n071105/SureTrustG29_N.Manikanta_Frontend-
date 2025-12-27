@@ -22,7 +22,7 @@ interface Friend {
 const Home = () => {
   const [text, setText] = useState("");
   const [image, setImage] = useState<File | null>(null);
-  const [friends,setFriends] = useState<Friend[]>([]);
+  const [friends, setFriends] = useState<Friend[]>([]);
 
   const [posts, setPosts] = useState([
     {
@@ -113,7 +113,6 @@ const Home = () => {
       setFriends(res.data.friends);
 
       console.log(res.data.friends);
-      
     } catch (error) {
       // Handle/log error if needed
       console.error("Failed to fetch friends", error);
@@ -125,32 +124,131 @@ const Home = () => {
   }, []);
 
   return (
-    <div className="w-full h-screen bg-gray-300 flex">
+    <div className="w-full h-screen bg-to-br from-gray-50 to-gray-100 flex">
       {/* LEFT PANEL */}
-      <div className="w-1/5 bg-gray-100 border-2 p-4">
-        <ul className="space-y-4 text-lg">
-          {/* <li className="mb-2 p-2 bg-white rounded shadow">Home 🛖</li> */}
-          <li className="mb-2 p-2 bg-white rounded shadow"><Link to="/profile"> Profile 👤</Link></li>
-          <li className="mb-2 p-2 bg-white rounded shadow"><Link to="/notification"> Notification 🔔</Link></li>
-          <li className="mb-2 p-2 bg-white rounded shadow"><Link to="/friends"> Friends 👥</Link></li>
-          <li className="mb-2 p-2 bg-white rounded shadow">  <Link to="/settings">Settings</Link>⚙</li>
-        </ul>
+      <div className="w-64  bg-white border-r border-gray-200 p-4 shadow-sm">
+        <div className="space-y-2">
+          <Link to="/profile">
+            <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-linear-to-r hover:from-red-50 hover:to-rose-50 transition-all duration-300 group cursor-pointer">
+              <div className="w-10 h-10 bg-linear-to-br from-red-500 to-rose-500 rounded-full flex items-center justify-center text-white shadow-md group-hover:scale-110 transition-transform">
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                  />
+                </svg>
+              </div>
+              <span className="font-semibold text-gray-700 group-hover:text-red-600 transition-colors">
+                Profile
+              </span>
+            </div>
+          </Link>
+          <Link to="/friends">
+            <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-linear-to-r hover:from-red-50 hover:to-rose-50 transition-all duration-300 group cursor-pointer">
+              <div className="w-10 h-10 bg-linear-to-br from-red-500 to-rose-500 rounded-full flex items-center justify-center text-white shadow-md group-hover:scale-110 transition-transform">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  className="lucide lucide-users-icon lucide-users"
+                >
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                  <path d="M16 3.128a4 4 0 0 1 0 7.744" />
+                  <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                  <circle cx="9" cy="7" r="4" />
+                </svg>
+              </div>
+              <span className="font-semibold text-gray-700 group-hover:text-red-600 transition-colors">
+                Friends
+              </span>
+            </div>
+          </Link>
+
+          <Link to="/notification">
+            <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-linear-to-r hover:from-red-50 hover:to-rose-50 transition-all duration-300 group cursor-pointer">
+              <div className="w-10 h-10 bg-linear-to-br from-red-500 to-rose-500 rounded-full flex items-center justify-center text-white shadow-md group-hover:scale-110 transition-transform">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  className="lucide lucide-bell-icon lucide-bell"
+                >
+                  <path d="M10.268 21a2 2 0 0 0 3.464 0" />
+                  <path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326" />
+                </svg>
+              </div>
+              <span className="font-semibold text-gray-700 group-hover:text-red-600 transition-colors">
+                Notifications
+              </span>
+            </div>
+          </Link>
+          <Link to="/settings">
+            <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-linear-to-r hover:from-red-50 hover:to-rose-50 transition-all duration-300 group cursor-pointer">
+              <div className="w-10 h-10 bg-linear-to-br from-red-500 to-rose-500 rounded-full flex items-center justify-center text-white shadow-md group-hover:scale-110 transition-transform">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  className="lucide lucide-settings-icon lucide-settings"
+                >
+                  <path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+              </div>
+              <span className="font-semibold text-gray-700 group-hover:text-red-600 transition-colors">
+                Settings
+              </span>
+            </div>
+          </Link>
+        </div>
       </div>
 
       {/* MIDDLE PANEL */}
-      <div className="w-3/5 p-6 bg-gray-200 overflow-y-auto">
-
+      <div className="flex-1 p-6 overflow-y-auto">
         {/* CREATE POST UI */}
-        <div className="bg-white rounded-3xl p-4 shadow mb-6">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-gray-300 rounded-full" />
+        <div className="bg-white rounded-2xl p-5 shadow-lg mb-6 border border-gray-100">
+          <div className="flex items-center gap-4">
+            {/* // User Avatar Placeholder */}
 
+            <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 font-bold">
+              <img
+                src={localStorage.getItem("profilePic") || "https://i.pravatar.cc/150?img=11"}
+                alt="User Avatar"
+                className="w-12 h-12 rounded-full object-cover"
+              />
+            </div>
+            
             <input
               type="text"
               value={text}
               onChange={(e) => setText(e.target.value)}
               placeholder="Start a post..."
-              className="w-full border rounded-full px-4 py-2 text-gray-700"
+              className="flex-1 border border-gray-300 rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
             />
           </div>
 
@@ -163,14 +261,30 @@ const Home = () => {
                   setImage(e.target.files ? e.target.files[0] : null)
                 }
               />
-              <button className="text-gray-600 hover:text-gray-800">📷</button>
+              <button className="text-gray-600 hover:text-gray-800">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  className="lucide lucide-camera-icon lucide-camera"
+                >
+                  <path d="M13.997 4a2 2 0 0 1 1.76 1.05l.486.9A2 2 0 0 0 18.003 7H20a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1.997a2 2 0 0 0 1.759-1.048l.489-.904A2 2 0 0 1 10.004 4z" />
+                  <circle cx="12" cy="13" r="3" />
+                </svg>
+              </button>
               <button className="text-gray-600 hover:text-gray-800">🎥</button>
               <button className="text-gray-600 hover:text-gray-800">😊</button>
             </div>
 
             <button
               onClick={handleCreatePost}
-              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+              className="bg-red-500 hover:bg-rose-700 text-white font-bold py-2 px-4 rounded-full"
             >
               Post
             </button>
@@ -187,43 +301,60 @@ const Home = () => {
               caption={post.caption}
               likes={post.likes}
               comments_count={post.comments}
-              postImage={post.postImage} id={""}            />
+              postImage={post.postImage}
+              id={""}
+            />
           ))}
         </div>
       </div>
 
       {/* RIGHT PANEL */}
-      <div className="w-1/5 bg-gray-100 border-2 p-4">
-        <h2 className="text-xl font-bold mb-4">Friends</h2>
-        <ul className="space-y-4">
-
-          {friends?  friends.length  > 0 ?
-          
-          <>{friends.map((friend) => (
-            <> 
-            <Link key={friend._id} to={`/friend/${friend._id}`}>
-            <div className="bg-white flex flex-col items-center p-2 rounded shadow">
-              
-            <img src={friend.profilePic||""} alt="" 
-            className="w-10 h-10 rounded-full mb-2"
-            />
-                    <li
-              key={friend._id}
-              className="mb-2 p-2  rounded shadow"
-            >
-              {friend.name}
-            </li>
-             </div>  
-             </Link>
-            </>
-
-          ))}</>:<>
-          
-          </>:<></>}
-          {/* <li className="mb-2 p-2 bg-white rounded shadow">Alice</li> */}
-       
-        </ul>
-      </div>
+      <div className="w-80 bg-white border-l border-gray-200 p-5 shadow-sm overflow-y-auto">
+        <div className="flex items-center justify-between mb-5"></div>
+        <h2 className="text-xl font-bold text-gray-800">Friends</h2>
+        <span className="text-xs bg-linear-to-r from-red-600 to-rose-500 text-white px-3 py-1 rounded-full font-semibold">
+          {friends ? friends.length : 0} Friends
+        </span>
+        <div className="mt-4 space-y-4 gap-3">
+          {friends && friends.length > 0 ? (
+        friends.map((friend) => (
+          <Link key={friend._id} to={`/friend/${friend._id}`}>
+            <div className="bg-gradient-to-r mt-3 from-white to-gray-50 hover:from-red-50 hover:to-rose-50 p-3 rounded-xl border border-gray-100 hover:border-red-200 transition-all duration-300 cursor-pointer group shadow-sm hover:shadow-md">
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <img
+                    src={friend.profilePic || "https://via.placeholder.com/40"}
+                    alt={friend.name}
+                    className="w-12 h-12 rounded-full object-cover ring-2 ring-gray-100 group-hover:ring-red-200 transition-all"
+                  />
+                  <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white"></div>
+                </div>
+                <div className="flex-1">
+                  <p className="font-semibold text-gray-800 group-hover:text-red-600 transition-colors">
+                    {friend.name}
+                  </p>
+                  <p className="text-xs text-gray-500">Active now</p>
+                </div>
+                <svg className="w-5 h-5 text-gray-400 group-hover:text-red-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </div>
+          </Link>
+        ))
+      ) : (
+        <div className="text-center py-8">
+          <div className="w-20 h-20 bg-gray-100 rounded-full mx-auto mb-3 flex items-center justify-center">
+            <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+          </div>
+          <p className="text-gray-500 text-sm">No friends yet</p>
+          <p className="text-gray-400 text-xs mt-1">Start connecting with people!</p>
+        </div>
+      )}
+    </div>
+  </div>
     </div>
   );
 };
