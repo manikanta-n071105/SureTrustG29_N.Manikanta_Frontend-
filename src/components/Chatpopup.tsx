@@ -4,9 +4,10 @@ import Chatwindow from './Chatwindow'
 
 const Chatpopup = () => {
   const [isOpen, setIsOpen] = React.useState(false);
-
+  const isLoginPage = location.pathname === "/login";
   const profilePic = localStorage.getItem("profilePic")||"";
-  return (
+  return (<>
+  {!isLoginPage &&
     <div>
     <div className="fixed bottom-4 right-4 z-50">
  
@@ -30,7 +31,8 @@ const Chatpopup = () => {
     </>)}
       
     </div>
-    </div>
+    </div>}
+    </>
   )
 }
 

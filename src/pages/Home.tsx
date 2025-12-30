@@ -1,17 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import PostCard from "../components/Post";
 import axios from "axios";
 import { baseUrl } from "../baseUrl";
 import { Link } from "react-router-dom";
 
-// {
-//     "friends": [
-//         {
-//             "_id": "691f315c3fc2a314dec44345",
-//             "email": "pk2@gmail.com"
-//         }
-//     ]
-// }
 interface Friend {
   _id: string;
   name: string;
@@ -19,35 +11,147 @@ interface Friend {
   profilePic?: string;
 }
 
-const Home = () => {
+interface Post {
+  _id: string;
+  text: string;
+  image?: string;
+  likes: string[];
+  comments: any[];
+  user: {
+    _id: string;
+    name: string;
+    profilePic?: string;
+  };
+  createdAt: string;
+}
+
+const Home: React.FC = () => {
   const [text, setText] = useState("");
   const [image, setImage] = useState<File | null>(null);
   const [friends, setFriends] = useState<Friend[]>([]);
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(false);
-  const [posts, setPosts] = useState([
-    {
-      profilePhoto: "https://randomuser.me/api/portraits/men/32.jpg",
-      userName: "John Doe",
-      caption: "Enjoying the sunny weather!",
-      likes: 120,
-      comments: 15,
-      postImage:
-        "https://img.freepik.com/free-vector/night-landscape-with-lake-mountains-trees-coast-vector-cartoon-illustration-nature-scene-with-coniferous-forest-river-shore-rocks-moon-stars-dark-sky_107791-8253.jpg?semt=ais_hybrid&w=740&q=80",
-    },
-    {
-      profilePhoto: "https://randomuser.me/api/portraits/women/44.jpg",
-      userName: "Jane Smith",
-      caption: "Delicious homemade meal.",
-      likes: 95,
-      comments: 8,
-      postImage:
-        "https://images.unsplash.com/photo-1485470733090-0aae1788d5af?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8d2FsbHBhcGVyJTIwNGt8ZW58MHx8MHx8fDA%3D",
-    },
-  ]);
+  const [myProfilePic, setMyProfilePic] = useState(
+    localStorage.getItem("profilePic") || ""
+  );
 
-  // -------------------------------
-  // CREATE POST FUNCTION
-  // -------------------------------
+  // Infinite scroll & pagination state
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+
+  // Intersection observer logic
+  const observer = useRef<IntersectionObserver | null>(null);
+  const lastPostElementRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      if (loading) return;
+      if (observer.current) observer.current.disconnect();
+
+      observer.current = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && hasMore && !loading) {
+          setPage((prevPage) => prevPage + 1);
+        }
+      });
+
+      if (node) observer.current.observe(node);
+    },
+    [loading, hasMore]
+  );
+
+  // Sync profile pic from database on load
+  useEffect(() => {
+    const syncUser = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+
+        const res = await axios.get(`${baseUrl}/user/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        const freshPic = res.data.user.profilePic;
+        if (freshPic) {
+          setMyProfilePic(freshPic);
+          localStorage.setItem("profilePic", freshPic);
+        }
+      } catch (err) {
+        console.error("Sync failed", err);
+      }
+    };
+    syncUser();
+  }, []);
+
+  // Global post update function
+  const handleUpdatePost = (updatedPostFromDB: Post) => {
+    setPosts((prevPosts) =>
+      prevPosts.map((post) => {
+        if (post._id === updatedPostFromDB._id) {
+          return {
+            ...post,
+            likes: updatedPostFromDB.likes,
+            comments: updatedPostFromDB.comments,
+          };
+        }
+        return post;
+      })
+    );
+  };
+
+  // Delete post function
+  const handleDeletePostFromHome = async (postId: string) => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      await axios.delete(`${baseUrl}/post/delete/${postId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      setPosts((prevPosts) => prevPosts.filter((post) => post._id !== postId));
+    } catch (err) {
+      console.error("Delete failed", err);
+      alert("Failed to delete post.");
+    }
+  };
+
+  // Fetch feed function
+  const fetchFeed = async (pageNum: number) => {
+    if (loading) return;
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+
+      const res = await axios.get(
+        `${baseUrl}/user/feed?page=${pageNum}&limit=5`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (pageNum === 1) {
+        setPosts(res.data.posts);
+      } else {
+        setPosts((prevPosts) => [...prevPosts, ...res.data.posts]);
+      }
+
+      setHasMore(res.data.pagination.hasMore);
+    } catch (err) {
+      console.error("Error fetching feed", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchFeed(page);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page]);
+
+  // Create post function
   const handleCreatePost = async () => {
     if (!text.trim()) {
       alert("Post text is required");
@@ -67,34 +171,27 @@ const Home = () => {
     }
 
     try {
-      const res = await axios.post(
-        "http://localhost:5000/api/post/create",
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
+      const res = await axios.post(`${baseUrl}/post/create`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
+        },
+      });
 
-      // Backend returns { post }
       const newPostFromDB = res.data.post;
 
-      // Add new post to the top of feed
       setPosts([
         {
-          profilePhoto: "https://i.pravatar.cc/150?img=11",
-          userName: "You",
-          caption: newPostFromDB.text,
-          likes: 0,
-          comments: 0,
-          postImage: newPostFromDB.image || "",
+          ...newPostFromDB,
+          user: {
+            ...newPostFromDB.user,
+            name: localStorage.getItem("username") || "User",
+            profilePic: myProfilePic || "https://i.pravatar.cc/150",
+          },
         },
         ...posts,
       ]);
 
-      // Reset fields
       setText("");
       setImage(null);
     } catch (error: any) {
@@ -103,6 +200,7 @@ const Home = () => {
     }
   };
 
+  // Fetch friends
   const fetchFriends = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -111,30 +209,42 @@ const Home = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
       setFriends(res.data.friends);
-
-      console.log(res.data.friends);
     } catch (error) {
-      // Handle/log error if needed
       console.error("Failed to fetch friends", error);
     }
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     fetchFriends();
   }, []);
 
   return (
- <div className="w-full min-h-screen bg-linear-to-br from-gray-50 to-gray-100 flex relative">
+    <div className="w-full min-h-screen bg-linear-to-br from-gray-50 to-gray-100 flex relative">
       {/* MOBILE HAMBURGER BUTTON */}
       <button
         onClick={() => setLeftSidebarOpen(!leftSidebarOpen)}
         className="lg:hidden fixed top-20 left-4 z-50 w-12 h-12 bg-linear-to-r from-red-600 to-rose-500 rounded-full shadow-lg flex items-center justify-center text-white"
       >
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg
+          className="w-6 h-6"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
           {leftSidebarOpen ? (
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M6 18L18 6M6 6l12 12"
+            />
           ) : (
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M4 6h16M4 12h16M4 18h16"
+            />
           )}
         </svg>
       </button>
@@ -142,7 +252,7 @@ const Home = () => {
       {/* MOBILE OVERLAY */}
       {leftSidebarOpen && (
         <div
-          className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-40 mt-2"
+          className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-40 top-16"
           onClick={() => setLeftSidebarOpen(false)}
         />
       )}
@@ -150,10 +260,10 @@ const Home = () => {
       {/* LEFT SIDEBAR */}
       <div
         className={`
-          fixed lg:static inset-y-0 left-0 z-40
-          w-64 bg-white border-r border-gray-200 p-4 shadow-lg mt-13
+          fixed lg:static top-16 bottom-0 left-0 z-40
+          w-64 bg-white border-r border-gray-200 p-4 shadow-lg
           transform transition-transform duration-300 ease-in-out
-          ${leftSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+          ${leftSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
           overflow-y-auto
         `}
       >
@@ -161,46 +271,101 @@ const Home = () => {
           <Link to="/profile" onClick={() => setLeftSidebarOpen(false)}>
             <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-linear-to-r hover:from-red-50 hover:to-rose-50 transition-all duration-300 group cursor-pointer">
               <div className="w-10 h-10 bg-linear-to-br from-red-500 to-rose-500 rounded-full flex items-center justify-center text-white shadow-md group-hover:scale-110 transition-transform">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                  />
                 </svg>
               </div>
-              <span className="font-semibold text-gray-700 group-hover:text-red-600 transition-colors">Profile</span>
+              <span className="font-semibold text-gray-700 group-hover:text-red-600 transition-colors">
+                Profile
+              </span>
             </div>
           </Link>
 
           <Link to="/notification" onClick={() => setLeftSidebarOpen(false)}>
             <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-linear-to-r hover:from-red-50 hover:to-rose-50 transition-all duration-300 group cursor-pointer">
               <div className="w-10 h-10 bg-linear-to-br from-amber-400 to-yellow-600 rounded-full flex items-center justify-center text-white shadow-md group-hover:scale-110 transition-transform relative">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+                  />
                 </svg>
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-white text-xs flex items-center justify-center font-bold">5</span>
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-white text-xs flex items-center justify-center font-bold">
+                  5
+                </span>
               </div>
-              <span className="font-semibold text-gray-700 group-hover:text-red-600 transition-colors">Notifications</span>
+              <span className="font-semibold text-gray-700 group-hover:text-red-600 transition-colors">
+                Notifications
+              </span>
             </div>
           </Link>
 
           <Link to="/friends" onClick={() => setLeftSidebarOpen(false)}>
             <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-linear-to-r hover:from-red-50 hover:to-rose-50 transition-all duration-300 group cursor-pointer">
               <div className="w-10 h-10 bg-linear-to-br from-red-500 to-rose-500 rounded-full flex items-center justify-center text-white shadow-md group-hover:scale-110 transition-transform">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                  />
                 </svg>
               </div>
-              <span className="font-semibold text-gray-700 group-hover:text-red-600 transition-colors">Friends</span>
+              <span className="font-semibold text-gray-700 group-hover:text-red-600 transition-colors">
+                Friends
+              </span>
             </div>
           </Link>
 
           <Link to="/settings" onClick={() => setLeftSidebarOpen(false)}>
             <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-linear-to-r hover:from-red-50 hover:to-rose-50 transition-all duration-300 group cursor-pointer">
               <div className="w-10 h-10 bg-linear-to-br from-gray-600 to-gray-800 rounded-full flex items-center justify-center text-white shadow-md group-hover:scale-110 transition-transform">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                  />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                  />
                 </svg>
               </div>
-              <span className="font-semibold text-gray-700 group-hover:text-red-600 transition-colors">Settings</span>
+              <span className="font-semibold text-gray-700 group-hover:text-red-600 transition-colors">
+                Settings
+              </span>
             </div>
           </Link>
 
@@ -215,12 +380,19 @@ const Home = () => {
             <div className="space-y-2">
               {friends && friends.length > 0 ? (
                 friends.map((friend) => (
-                  <Link key={friend._id} to={`/friend/${friend._id}`} onClick={() => setLeftSidebarOpen(false)}>
+                  <Link
+                    key={friend._id}
+                    to={`/friend/${friend._id}`}
+                    onClick={() => setLeftSidebarOpen(false)}
+                  >
                     <div className="bg-linear-to-r from-white to-gray-50 hover:from-red-50 hover:to-rose-50 p-2 rounded-xl border border-gray-100 hover:border-red-200 transition-all duration-300 cursor-pointer group">
                       <div className="flex items-center gap-3">
                         <div className="relative">
                           <img
-                            src={friend.profilePic || "https://via.placeholder.com/40"}
+                            src={
+                              friend.profilePic ||
+                              "https://via.placeholder.com/40"
+                            }
                             alt={friend.name}
                             className="w-10 h-10 rounded-full object-cover ring-2 ring-gray-100 group-hover:ring-red-200 transition-all"
                           />
@@ -234,7 +406,9 @@ const Home = () => {
                   </Link>
                 ))
               ) : (
-                <p className="text-gray-500 text-sm text-center py-4">No friends yet</p>
+                <p className="text-gray-500 text-sm text-center py-4">
+                  No friends yet
+                </p>
               )}
             </div>
           </div>
@@ -246,9 +420,19 @@ const Home = () => {
         {/* CREATE POST CARD */}
         <div className="bg-white rounded-2xl p-4 md:p-5 shadow-lg mb-6 border border-gray-100">
           <div className="flex items-center gap-3 md:gap-4">
-            <div className="w-10 h-10 md:w-12 md:h-12 bg-linear-to-br from-red-500 to-rose-500 rounded-full flex items-center justify-center shadow-md flex-shrink-0">
-              <span className="text-white font-bold text-base md:text-lg">U</span>
-            </div>
+            {myProfilePic ? (
+              <img
+                src={myProfilePic}
+                alt="Profile"
+                className="w-10 h-10 md:w-12 md:h-12 rounded-full object-cover shadow-md flex-shrink-0 ring-2 ring-gray-200"
+              />
+            ) : (
+              <div className="w-10 h-10 md:w-12 md:h-12 bg-linear-to-br from-red-500 to-rose-500 rounded-full flex items-center justify-center shadow-md flex-shrink-0">
+                <span className="text-white font-bold text-base md:text-lg">
+                  U
+                </span>
+              </div>
+            )}
 
             <input
               type="text"
@@ -262,10 +446,22 @@ const Home = () => {
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mt-4 pt-4 border-t border-gray-100 gap-3">
             <div className="flex items-center gap-2 flex-wrap">
               <label className="flex items-center gap-2 px-3 md:px-4 py-2 bg-red-50 text-red-600 rounded-full cursor-pointer hover:bg-red-100 transition-all group">
-                <svg className="w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                <svg
+                  className="w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                  />
                 </svg>
-                <span className="text-xs md:text-sm font-semibold">Photo</span>
+                <span className="text-xs md:text-sm font-semibold">
+                  {image ? image.name : "Photo"}
+                </span>
                 <input
                   type="file"
                   accept="image/png, image/jpeg"
@@ -277,16 +473,29 @@ const Home = () => {
               </label>
 
               <button className="flex items-center gap-2 px-3 md:px-4 py-2 bg-amber-50 text-amber-600 rounded-full hover:bg-amber-100 transition-all group">
-                <svg className="w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <svg
+                  className="w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
                 </svg>
-                <span className="text-xs md:text-sm font-semibold hidden sm:inline">Feeling</span>
+                <span className="text-xs md:text-sm font-semibold hidden sm:inline">
+                  Feeling
+                </span>
               </button>
             </div>
 
             <button
               onClick={handleCreatePost}
-              className="w-full sm:w-auto bg-linear-to-r from-red-600 to-rose-500 hover:from-red-700 hover:to-rose-600 text-white font-semibold py-2 md:py-2.5 px-5 md:px-6 rounded-full transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 text-sm md:text-base"
+              disabled={loading || !text.trim()}
+              className="w-full sm:w-auto bg-linear-to-r from-red-600 to-rose-500 hover:from-red-700 hover:to-rose-600 text-white font-semibold py-2 md:py-2.5 px-5 md:px-6 rounded-full transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 text-sm md:text-base disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
             >
               Post
             </button>
@@ -295,17 +504,80 @@ const Home = () => {
 
         {/* POSTS FEED */}
         <div className="space-y-4 md:space-y-6">
-          {posts.map((post, index) => (
-            <PostCard
-              key={index}
-              profilePhoto={post.profilePhoto}
-              userName={post.userName}
-              caption={post.caption}
-              likes={post.likes}
-              comments={post.comments}
-              postImage={post.postImage}
-            />
-          ))}
+          {posts.length === 0 && !loading && (
+            <div className="text-center py-16">
+              <div className="w-20 h-20 bg-gray-100 rounded-full mx-auto mb-4 flex items-center justify-center">
+                <svg
+                  className="w-10 h-10 text-gray-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"
+                  />
+                </svg>
+              </div>
+              <p className="text-gray-500 text-lg font-semibold mb-1">
+                No posts yet
+              </p>
+              <p className="text-gray-400 text-sm">
+                Be the first to share something!
+              </p>
+            </div>
+          )}
+
+          {posts.map((post, index) => {
+            const isLast = posts.length === index + 1;
+            const likesCount = Array.isArray(post.likes)
+              ? post.likes.length
+              : post.likes;
+
+            return (
+              <div
+                key={post._id}
+                ref={isLast ? lastPostElementRef : null}
+                className="w-full"
+              >
+                <PostCard
+                  id={post._id}
+                  profilePhoto={
+                    post.user?.profilePic ||
+                    "https://cdn-icons-png.flaticon.com/512/149/149071.png"
+                  }
+                  userName={post.user?.name || "Unknown User"}
+                  caption={post.text}
+                  likes={likesCount}
+                  comments={post.comments}
+                  comments_count={post.comments?.length || 0}
+                  postImage={post.image}
+                  onUpdate={handleUpdatePost}
+                  onDelete={handleDeletePostFromHome}
+                  isProfilePage={false}
+                />
+              </div>
+            );
+          })}
+
+          {loading && (
+            <div className="flex items-center justify-center py-8">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 border-4 border-red-200 border-t-red-600 rounded-full animate-spin"></div>
+                <p className="text-red-600 font-semibold">Loading more posts...</p>
+              </div>
+            </div>
+          )}
+
+          {!hasMore && posts.length > 0 && (
+            <div className="text-center py-8">
+              <p className="text-gray-500 font-semibold">
+                You've reached the end! 🎉
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -326,7 +598,9 @@ const Home = () => {
                   <div className="flex items-center gap-3">
                     <div className="relative">
                       <img
-                        src={friend.profilePic || "https://via.placeholder.com/40"}
+                        src={
+                          friend.profilePic || "https://via.placeholder.com/40"
+                        }
                         alt={friend.name}
                         className="w-12 h-12 rounded-full object-cover ring-2 ring-gray-100 group-hover:ring-red-200 transition-all"
                       />
@@ -338,8 +612,18 @@ const Home = () => {
                       </p>
                       <p className="text-xs text-gray-500">Active now</p>
                     </div>
-                    <svg className="w-5 h-5 text-gray-400 group-hover:text-red-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    <svg
+                      className="w-5 h-5 text-gray-400 group-hover:text-red-600 transition-colors"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 5l7 7-7 7"
+                      />
                     </svg>
                   </div>
                 </div>
@@ -348,18 +632,29 @@ const Home = () => {
           ) : (
             <div className="text-center py-8">
               <div className="w-20 h-20 bg-gray-100 rounded-full mx-auto mb-3 flex items-center justify-center">
-                <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                <svg
+                  className="w-10 h-10 text-gray-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                  />
                 </svg>
               </div>
               <p className="text-gray-500 text-sm">No friends yet</p>
-              <p className="text-gray-400 text-xs mt-1">Start connecting with people!</p>
+              <p className="text-gray-400 text-xs mt-1">
+                Start connecting with people!
+              </p>
             </div>
           )}
         </div>
       </div>
     </div>
-
   );
 };
 

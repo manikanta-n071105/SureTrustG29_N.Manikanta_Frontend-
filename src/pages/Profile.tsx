@@ -170,6 +170,18 @@ const Profile: React.FC = () => {
               Settings
             </Link>
           </li>
+             <li 
+             onClick={()=>{
+              localStorage.removeItem("token")
+              localStorage.removeItem("profilePic")
+              localStorage.removeItem("name")
+
+             }}
+             >
+            <Link to="/login" className="hover:text-blue-600">
+              Logout
+            </Link>
+          </li>
         </ul>
       </div>
 
