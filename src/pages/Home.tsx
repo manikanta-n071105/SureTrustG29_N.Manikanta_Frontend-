@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import PostCard from "../components/Post";
 import axios from "axios";
 import { baseUrl } from "../baseUrl";
@@ -24,26 +24,120 @@ const Home = () => {
   const [image, setImage] = useState<File | null>(null);
   const [friends, setFriends] = useState<Friend[]>([]);
 
-  const [posts, setPosts] = useState([
-    {
-      profilePhoto: "https://randomuser.me/api/portraits/men/32.jpg",
-      userName: "John Doe",
-      caption: "Enjoying the sunny weather!",
-      likes: 120,
-      comments: 15,
-      postImage:
-        "https://img.freepik.com/free-vector/night-landscape-with-lake-mountains-trees-coast-vector-cartoon-illustration-nature-scene-with-coniferous-forest-river-shore-rocks-moon-stars-dark-sky_107791-8253.jpg?semt=ais_hybrid&w=740&q=80",
+  // --- NEW: STATE FOR CURRENT USER PROFILE PIC ---
+  const [myProfilePic, setMyProfilePic] = useState(localStorage.getItem("profilePic") || "");
+
+  // --- INFINITE SCROLL & PAGINATION STATE ---
+  const [posts, setPosts] = useState<any[]>([]);
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+
+  // --- INTERSECTION OBSERVER LOGIC ---
+  const observer = useRef<IntersectionObserver | null>(null);
+  const lastPostElementRef = useCallback(
+    (node: HTMLDivElement) => {
+      if (loading) return;
+      if (observer.current) observer.current.disconnect();
+
+      observer.current = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && hasMore && !loading) {
+          setPage((prevPage) => prevPage + 1);
+        }
+      });
+
+      if (node) observer.current.observe(node);
     },
-    {
-      profilePhoto: "https://randomuser.me/api/portraits/women/44.jpg",
-      userName: "Jane Smith",
-      caption: "Delicious homemade meal.",
-      likes: 95,
-      comments: 8,
-      postImage:
-        "https://images.unsplash.com/photo-1485470733090-0aae1788d5af?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8d2FsbHBhcGVyJTIwNGt8ZW58MHx8MHx8fDA%3D",
-    },
-  ]);
+    [loading, hasMore]
+  );
+
+  // --- NEW: SYNC PROFILE PIC FROM DATABASE ON LOAD ---
+  useEffect(() => {
+    const syncUser = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+
+        const res = await axios.get(`${baseUrl}/user/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        const freshPic = res.data.user.profilePic;
+        if (freshPic) {
+          setMyProfilePic(freshPic);
+          localStorage.setItem("profilePic", freshPic);
+        }
+      } catch (err) {
+        console.error("Sync failed", err);
+      }
+    };
+    syncUser();
+  }, []);
+
+  // --- GLOBAL POST UPDATE FUNCTION ---
+  const handleUpdatePost = (updatedPostFromDB: any) => {
+    setPosts((prevPosts) =>
+      prevPosts.map((post) => {
+        const realIdInFeed = post._id.split("_page")[0];
+
+        if (realIdInFeed === updatedPostFromDB._id) {
+          return {
+            ...post,
+            likes: updatedPostFromDB.likes,
+            comments: updatedPostFromDB.comments,
+          };
+        }
+        return post;
+      })
+    );
+  };
+
+  // --- DELETE POST FUNCTION ---
+  const handleDeletePostFromHome = async (postId: string) => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      await axios.delete(`${baseUrl}/post/delete/${postId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      setPosts((prevPosts) => prevPosts.filter((post) => post._id !== postId));
+    } catch (err) {
+      console.error("Delete failed", err);
+      alert("Failed to delete post.");
+    }
+  };
+
+  // --- FETCH FEED FUNCTION ---
+  const fetchFeed = async (pageNum: number) => {
+    if (loading) return;
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+const res = await axios.get(`${baseUrl}/post/feed?page=${pageNum}&limit=5`, {
+  headers: { Authorization: `Bearer ${token}` },
+});
+
+if (pageNum === 1) {
+  setPosts(res.data.posts); 
+} else {
+  setPosts((prevPosts) => [...prevPosts, ...res.data.posts]); 
+}
+
+setHasMore(res.data.pagination.hasMore);
+    } catch (err) {
+      console.error("Error fetching feed", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchFeed(page);
+  }, [page]);
 
   // -------------------------------
   // CREATE POST FUNCTION
@@ -54,47 +148,39 @@ const Home = () => {
       return;
     }
 
-    const token = localStorage.getItem("token");
+     const token = localStorage.getItem("token");
     if (!token) {
       alert("You are not logged in");
       return;
     }
-
-    const formData = new FormData();
+     const formData = new FormData();
     formData.append("text", text);
     if (image) {
       formData.append("image", image);
     }
 
     try {
-      const res = await axios.post(
-        "http://localhost:5000/api/post/create",
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
+      const res = await axios.post(`${baseUrl}/post/create`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
+        },
+      });
 
-      // Backend returns { post }
       const newPostFromDB = res.data.post;
 
-      // Add new post to the top of feed
       setPosts([
         {
-          profilePhoto: "https://i.pravatar.cc/150?img=11",
-          userName: "You",
-          caption: newPostFromDB.text,
-          likes: 0,
-          comments: 0,
-          postImage: newPostFromDB.image || "",
+          ...newPostFromDB,
+          user: {
+            name: localStorage.getItem("username") || "User",
+            // Uses the synced myProfilePic state
+            profilePic: myProfilePic || "https://i.pravatar.cc/150"
+          }
         },
         ...posts,
       ]);
 
-      // Reset fields
       setText("");
       setImage(null);
     } catch (error: any) {
@@ -103,7 +189,7 @@ const Home = () => {
     }
   };
 
-  const fetchFriends = async () => {
+   const fetchFriends = async () => {
     try {
       const token = localStorage.getItem("token");
       if (!token) return;
@@ -125,7 +211,8 @@ const Home = () => {
 
   return (
     <div className="w-full h-screen bg-to-br from-gray-50 to-gray-100 flex">
-      {/* LEFT PANEL */}
+
+       {/* LEFT PANEL */}
       <div className="w-64  bg-white border-r border-gray-200 p-4 shadow-sm">
         <div className="space-y-2">
           <Link to="/profile">
@@ -228,6 +315,7 @@ const Home = () => {
         </div>
       </div>
 
+
       {/* MIDDLE PANEL */}
       <div className="flex-1 p-6 overflow-y-auto">
         {/* CREATE POST UI */}
@@ -291,23 +379,39 @@ const Home = () => {
           </div>
         </div>
 
-        {/* POSTS FEED */}
+         {/* POSTS FEED */}
         <div className="flex flex-col gap-4 items-center">
-          {posts.map((post, index) => (
-            <PostCard
-              key={index}
-              profilePhoto={post.profilePhoto}
-              userName={post.userName}
-              caption={post.caption}
-              likes={post.likes}
-              comments_count={post.comments}
-              postImage={post.postImage}
-              id={""}
-            />
-          ))}
+          {posts.map((post, index) => {
+            const isLast = posts.length === index + 1;
+            const likesCount = Array.isArray(post.likes) ? post.likes.length : post.likes;
+
+            return (
+              <div 
+                key={post._id || index} 
+                ref={isLast ? lastPostElementRef : null} 
+                className="w-full flex justify-center"
+              >
+                <PostCard
+                  id={post._id}
+                  profilePhoto={post.user?.profilePic || "https://cdn-icons-png.flaticon.com/512/149/149071.png"} 
+                  userName={post.user?.name || "Unknown User"}
+                  caption={post.text}
+                  likes={likesCount}
+                  comments={post.comments}
+                  comments_count={post.comments?.length || 0}
+                  postImage={post.image}
+                  onUpdate={handleUpdatePost}
+                  onDelete={handleDeletePostFromHome}
+                  isProfilePage={true}
+                />
+              </div>
+            );
+          })}
+          {loading && <p className="text-red-500 font-bold p-4 text-center">Loading more posts...</p>}
         </div>
       </div>
 
+      
       {/* RIGHT PANEL */}
       <div className="w-80 bg-white border-l border-gray-200 p-5 shadow-sm overflow-y-auto">
         <div className="flex items-center justify-between mb-5"></div>
