@@ -255,6 +255,7 @@ const LoginPopup: React.FC<LoginPopupProps> = ({ onClose, setUser }) => {
 
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("profilePic", res.data.profilePic);
+      localStorage.setItem("loginTime", Date.now().toString());
 
       const userName = res.data.message.split(" ")[0];
       setUser(userName);

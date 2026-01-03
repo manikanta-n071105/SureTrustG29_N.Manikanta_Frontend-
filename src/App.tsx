@@ -13,8 +13,21 @@ import DeletedPosts from "./pages/DeletedPosts";
 import FriendProfile from './pages/FriendProfilepage'
 import Settings from "./pages/Settings";
 import Chatpopup from './components/Chatpopup'
+import { useEffect } from 'react'
 
 function App() {
+  useEffect(() => {
+    const loginTime = localStorage.getItem("loginTime");
+    if (loginTime) {
+      const currentTime = Date.now();
+      const elapsedTime = currentTime - parseInt(loginTime, 10);
+      const sevenDays = 24 * 60 * 60 * 1000 *7;
+      if (elapsedTime > sevenDays) {
+        localStorage.clear();
+        window.location.href = '/login';
+      }
+    }
+  }, []);
   return (
     <>
       <BrowserRouter>
