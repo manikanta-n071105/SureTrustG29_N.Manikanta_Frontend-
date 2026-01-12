@@ -14,7 +14,7 @@ const Profile: React.FC = () => {
     <div className="min-h-screen flex justify-center items-center bg-gray-100">
       <ProfileCard
         name="Alexy Johnson"
-        age={21}
+  
         image="https://i.pravatar.cc/150?img=20"
         onAccept={handleAccept}
         onReject={handleReject}

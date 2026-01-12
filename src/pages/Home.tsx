@@ -76,26 +76,35 @@ const Home: React.FC = () => {
         }
       } catch (err) {
         console.error("Sync failed", err);
+        //send to login page
+        window.location.href = "/login";
       }
     };
     syncUser();
   }, []);
-
+  useEffect(() => {
+        const loginTime = localStorage.getItem("loginTime");
+    if (loginTime === null) {
+       localStorage.clear();
+        window.location.href = '/login';
+        
+    }
+  },[]);
   // Global post update function
-  const handleUpdatePost = (updatedPostFromDB: Post) => {
-    setPosts((prevPosts) =>
-      prevPosts.map((post) => {
-        if (post._id === updatedPostFromDB._id) {
-          return {
-            ...post,
-            likes: updatedPostFromDB.likes,
-            comments: updatedPostFromDB.comments,
-          };
-        }
-        return post;
-      })
-    );
-  };
+  // const handleUpdatePost = (updatedPostFromDB: Post) => {
+  //   setPosts((prevPosts) =>
+  //     prevPosts.map((post) => {
+  //       if (post._id === updatedPostFromDB._id) {
+  //         return {
+  //           ...post,
+  //           likes: updatedPostFromDB.likes,
+  //           comments: updatedPostFromDB.comments,
+  //         };
+  //       }
+  //       return post;
+  //     })
+  //   );
+  // };
 
   // Delete post function
   const handleDeletePostFromHome = async (postId: string) => {
@@ -554,7 +563,7 @@ const Home: React.FC = () => {
                   comments={post.comments}
                   comments_count={post.comments?.length || 0}
                   postImage={post.image}
-                  onUpdate={handleUpdatePost}
+                  // onUpdate={handleUpdatePost}
                   onDelete={handleDeletePostFromHome}
                   isProfilePage={false}
                 />

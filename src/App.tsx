@@ -18,6 +18,7 @@ import { useEffect } from 'react'
 function App() {
   useEffect(() => {
     const loginTime = localStorage.getItem("loginTime");
+
     if (loginTime) {
       const currentTime = Date.now();
       const elapsedTime = currentTime - parseInt(loginTime, 10);
@@ -28,6 +29,7 @@ function App() {
       }
     }
   }, []);
+
   return (
     <>
       <BrowserRouter>

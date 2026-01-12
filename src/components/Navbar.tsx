@@ -84,10 +84,10 @@ const Navbar: React.FC = () => {
       <nav className="w-full h-13 bg-linear-to-r from-red-600 via-red-500 to-rose-500 shadow-lg border-b border-red-700/30 flex items-center justify-between px-6 sticky top-0 z-50">
         <Link to="/" className="flex items-center gap-2 group">
           <div className="w-10 h-10 bg-linear-to-br from-amber-400 to-yellow-600 rounded-full flex items-center justify-center shadow-md group-hover:scale-110 transition-transform duration-300">
-            <span className="text-white font-bold text-xl">S</span>
+            <img src="../../public/logo.png" alt="Logo" className="w-10 h-10 rounded-full flex items-center justify-center" />
           </div>
           <h1 className="font-bold text-2xl text-white tracking-tight hidden sm:block">
-            SMA
+            PulseNet    
           </h1>
         </Link>
 
@@ -156,7 +156,15 @@ const Navbar: React.FC = () => {
                   </div>
                 )}
               </div>
-
+                {user && (
+                  <div className="relative">
+                    <img
+                      src={localStorage.getItem("profilePic") || ""}
+                      className="w-11 h-11 rounded-full object-cover ring-2 ring-red-100"
+                    />  
+                    <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+                  </div>
+                )}
               {/* Navigation Icons */}
               <div className="flex items-center gap-4">
                 {/* Notification Icon */}
@@ -249,7 +257,7 @@ const LoginPopup: React.FC<LoginPopupProps> = ({ onClose, setUser }) => {
         token: string;
         message: string;
         profilePic: string;
-      }>(`${baseUrl}/api/user/login`, {
+      }>(`${baseUrl}/user/login`, {
         email: form.email,
         password: form.password,
       });
@@ -318,7 +326,7 @@ const LoginPopup: React.FC<LoginPopupProps> = ({ onClose, setUser }) => {
           <div className="w-12 h-12 bg-linear-to-br from-amber-400 to-yellow-600 rounded-full mx-auto mb-2 flex items-center justify-center shadow-lg">
             <span className="text-white font-bold text-xl">S</span>
           </div>
-          <h2 className="text-xl font-bold text-white">Welcome to SMA</h2>
+          <h2 className="text-xl font-bold text-white">Welcome to PulseNet</h2>
         </div>
 
         {/* Scrollable Content */}

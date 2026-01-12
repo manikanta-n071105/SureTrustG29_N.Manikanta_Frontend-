@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import  { useState, useEffect } from 'react';
 import { UserPlus } from "lucide-react";
 import PostCard from '../components/Post';
 import { useParams, Link } from 'react-router-dom';
