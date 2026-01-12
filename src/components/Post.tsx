@@ -80,7 +80,7 @@ const PostCard: React.FC<PostCardProps> = ({
       }
 
       await axios.post(
-        `${baseUrl}/api/post/like/${id}`,
+        `${baseUrl}/post/like/${id}`,
         {},
         {
           headers: {

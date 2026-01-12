@@ -76,20 +76,12 @@ const Home: React.FC = () => {
         }
       } catch (err) {
         console.error("Sync failed", err);
-        //send to login page
-        window.location.href = "/login";
+        
       }
     };
     syncUser();
   }, []);
-  useEffect(() => {
-        const loginTime = localStorage.getItem("loginTime");
-    if (loginTime === null) {
-       localStorage.clear();
-        window.location.href = '/login';
-        
-    }
-  },[]);
+
   // Global post update function
   // const handleUpdatePost = (updatedPostFromDB: Post) => {
   //   setPosts((prevPosts) =>
