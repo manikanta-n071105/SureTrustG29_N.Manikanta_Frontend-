@@ -1,1 +1,1 @@
-export const baseUrl = "https://suretrustg29-n-manikanta-backend.onrender.comapi";
+export const baseUrl = "https://suretrustg29-n-manikanta-backend.onrender.com/api";
